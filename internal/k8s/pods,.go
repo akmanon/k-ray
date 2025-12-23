@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/akmanon/k-ray/pkg/models"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -16,7 +17,7 @@ type PodFinding struct {
 	Restarts  int32
 }
 
-func ScanPods(client *kubernetes.Clientset, namespace string) ([]PodFinding, error) {
+func ScanPods(client *kubernetes.Clientset, namespace string) ([]models.Findings, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -27,16 +28,17 @@ func ScanPods(client *kubernetes.Clientset, namespace string) ([]PodFinding, err
 		return nil, err
 	}
 
-	findings := []PodFinding{}
+	findings := []models.Findings{}
 
 	for _, pod := range pods.Items {
 		for _, cs := range pod.Status.ContainerStatuses {
 			if cs.State.Waiting != nil {
 				reason := cs.State.Waiting.Reason
 				if reason == "CrashLoopBackOff" || reason == "ImagePullBackOff" {
-					findings = append(findings, PodFinding{
+					findings = append(findings, models.Findings{
+						Severity:  "Critical..................................",
 						Namespace: pod.Namespace,
-						Name:      pod.Name,
+						Resource:  "pod/" + pod.Name,
 						Reason:    reason,
 						Message:   cs.State.Waiting.Message,
 						Restarts:  cs.RestartCount,

@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/akmanon/k-ray/internal/k8s"
+	outputPkg "github.com/akmanon/k-ray/internal/output"
+	"github.com/akmanon/k-ray/pkg/models"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,14 +26,20 @@ var scanCmd = &cobra.Command{
 		if ns == "" {
 			ns = metav1.NamespaceAll
 		}
-		findings, err := k8s.ScanPods(client, nameSpace)
+		var report []models.Findings
+		report, err = k8s.ScanPods(client, nameSpace)
 
-		if len(findings) == 0 {
+		if len(report) == 0 {
 			fmt.Println("No crashing pods found")
 			return
 		}
+		switch output {
+		case "json":
+			_ = outputPkg.PrintJson(report)
+		default:
+			outputPkg.PrintTable(report)
 
-		fmt.Println(findings)
+		}
 		_ = client
 	},
 }
